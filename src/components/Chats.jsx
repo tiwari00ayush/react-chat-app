@@ -14,7 +14,7 @@ const Chats = () => {
           />
           {/* {name of the user} */}
           <div>
-            <p className="text-white">Dax verma</p>
+            <p className="text-white font-bold">Aashish Gupta</p>
             <p className="text-[0.8rem] text-gray-300">latest message</p>
           </div>
         </div>
@@ -29,7 +29,7 @@ const Chats = () => {
           />
           {/* {name of the user} */}
           <div>
-            <p className="text-white">Dax verma</p>
+            <p className="text-white font-bold">Dax verma</p>
             <p className="text-[0.8rem] text-gray-300">latest message</p>
           </div>
         </div>
