@@ -4,11 +4,13 @@ import { BsThreeDots } from "react-icons/bs";
 import { IoPersonAdd } from "react-icons/io5";
 import Messages from "./Messages";
 import Input from "./Input";
+import { useChat } from "../context/ChatContext";
 const Chat = () => {
+  const { data } = useChat();
   return (
     <div className="bg-[#dddcf4] grid grid-rows-[80px_1fr_70px] overflow-scroll">
       <div className="flex h-[80px] py-5 px-3 justify-between items-center text-white bg-[#5e5b8b]">
-        <p>Dax Verma</p>
+        <p>{data.user?.displayName}</p>
         <div className="flex items-center gap-4">
           <FaVideo
             style={{ color: "white", fontSize: "1.2rem", cursor: "pointer" }}

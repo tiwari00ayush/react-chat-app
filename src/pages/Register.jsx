@@ -1,14 +1,108 @@
 import React, { useState } from "react";
 import addAvatar from "../assets/addAvatar.png";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth, storage } from "../firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
+
 const Register = () => {
   const [formData, setFormData] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
+    if (e.target.id === "avatar") {
+      setFormData({ ...formData, avatar: e.target.files[0] });
+    } else {
+      setFormData({ ...formData, [e.target.id]: e.target.value });
+    }
   };
-  const submitData = (e) => {
+  const submitData = async (e) => {
     e.preventDefault();
     console.log(formData);
+    setLoading(true);
+    const email = formData["email"];
+    const password = formData["password"];
+    const avatar = formData["avatar"];
+    console.log(URL.createObjectURL(avatar));
+    const displayName = formData["displayName"].toLowerCase();
+
+    const q = query(
+      collection(db, "users"),
+      where("displayName", "==", displayName)
+    );
+
+    const querySnapshot = await getDocs(q);
+    let isDisplayNameExist = false;
+
+    querySnapshot.forEach((doc) => {
+      // doc.data() is never undefined for query doc snapshots
+      if (doc.data().displayName === displayName) isDisplayNameExist = true;
+    });
+
+    if (isDisplayNameExist) {
+      setError({ message: "User name already exists" });
+      setLoading(false);
+      return;
+    }
+    try {
+      const res = await createUserWithEmailAndPassword(auth, email, password);
+      console.log(res);
+      const storageRef = ref(storage, displayName);
+
+      const uploadTask = uploadBytesResumable(storageRef, avatar);
+
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          // Observe state change events such as progress, pause, and resume
+          // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log("Upload is " + progress + "% done");
+          switch (snapshot.state) {
+            case "paused":
+              console.log("Upload is paused");
+              break;
+            case "running":
+              console.log("Upload is running");
+              break;
+          }
+        },
+        (error) => {
+          // Handle unsuccessful uploads
+          setError(error);
+        },
+        async () => {
+          // Handle successful uploads on complete
+          // For instance, get the download URL: https://firebasestorage.googleapis.com/...
+          setLoading(false);
+          getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+            console.log("File available at", downloadURL);
+            await updateProfile(res.user, {
+              displayName,
+              photoURL: downloadURL,
+            });
+            await setDoc(doc(db, "users", res.user.uid), {
+              uid: res.user.uid,
+              displayName,
+              email,
+              photoURL: downloadURL,
+            });
+            await setDoc(doc(db, "userChat", res.user.uid), {});
+            setError(null);
+            navigate("/");
+          });
+        }
+      );
+    } catch (error) {
+      setLoading(false);
+      setError(error);
+      console.log(error);
+    }
   };
   return (
     <div className="w-full h-screen bg-[#a7bcfb] flex justify-center items-center p-2">
@@ -22,11 +116,44 @@ const Register = () => {
         <h4 className="text-center pb-5">Register</h4>
         <form className="flex flex-col px-10 py-5">
           <input
+            type="file"
+            id="avatar"
+            className="text-center hidden"
+            onChange={handleChange}
+          />
+          <label
+            htmlFor="avatar"
+            className="flex items-center justify-center gap-2 cursor-pointer mb-3"
+          >
+            {" "}
+            <img
+              src={
+                formData["avatar"] === undefined
+                  ? addAvatar
+                  : URL.createObjectURL(formData["avatar"])
+              }
+              alt="addAvatar"
+              className={`${
+                formData["avatar"] === undefined
+                  ? "w-[40px]"
+                  : "w-[100px] h-[100px] block rounded-full object-cover"
+              } `}
+            />{" "}
+            <span
+              className={`${
+                formData["avatar"] === undefined ? " text-[#8da4f1]" : "hidden"
+              } `}
+            >
+              Add an avatar
+            </span>
+          </label>
+          <input
             type="text"
             placeholder="display name"
             id="displayName"
             className="border-solid border-b-2 pb-3 pl-1 outline-none my-2"
             onChange={handleChange}
+            required
           />
           <input
             type="text"
@@ -34,29 +161,27 @@ const Register = () => {
             id="email"
             className="border-solid border-b-2 pb-3 pl-1 outline-none my-2"
             onChange={handleChange}
+            required
           />
           <input
-            type="text"
+            type="password"
             placeholder="password"
             id="password"
             className="border-solid border-b-2 pb-3 pl-1 outline-none my-2"
             onChange={handleChange}
+            required
           />
-          <input type="file" id="avatar" className="text-center hidden" />
-          <label
-            htmlFor="avatar"
-            className="flex items-center justify-start gap-2 cursor-pointer my-2"
-          >
-            {" "}
-            <img src={addAvatar} alt="addAvatar" className="w-[40px]" />{" "}
-            <span className="text-[#8da4f1]">Add an avatar</span>
-          </label>
+
           <button
             className="w-full py-2 bg-purple-400 text-white mt-5 mb-2"
             type="submit"
+            // disabled={loading}
           >
-            Sign up
+            {loading ? "loading..." : "Sign up"}
           </button>
+          <p className="text-red-500 text-center">
+            {error ? error.message : ""}
+          </p>
           <p className="text-center my-2">
             Already have an account?{" "}
             <Link
