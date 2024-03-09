@@ -12,6 +12,7 @@ const Register = () => {
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [uploadBar, setUploadBar] = useState(0);
   const navigate = useNavigate();
   const handleChange = (e) => {
     if (e.target.id === "avatar") {
@@ -29,7 +30,6 @@ const Register = () => {
     const avatar = formData["avatar"];
     console.log(URL.createObjectURL(avatar));
     const displayName = formData["displayName"].toLowerCase();
-
     const q = query(
       collection(db, "users"),
       where("displayName", "==", displayName)
@@ -63,6 +63,7 @@ const Register = () => {
           const progress =
             (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           console.log("Upload is " + progress + "% done");
+          setUploadBar(progress);
           switch (snapshot.state) {
             case "paused":
               console.log("Upload is paused");
@@ -120,6 +121,7 @@ const Register = () => {
             id="avatar"
             className="text-center hidden"
             onChange={handleChange}
+            required
           />
           <label
             htmlFor="avatar"
@@ -191,6 +193,17 @@ const Register = () => {
               Login
             </Link>
           </p>
+          <div
+            style={{ width: `${uploadBar}%` }}
+            className="h-[20px] bg-green-700 rounded-md text-white text-center flex items-center justify-center"
+          >
+            {uploadBar !== 0 && Math.round(uploadBar)}
+            <span
+              className={`${uploadBar === 0 ? "hidden" : "block text-white"}`}
+            >
+              %
+            </span>
+          </div>
         </form>
       </div>
     </div>
