@@ -23,7 +23,6 @@ const Input = () => {
   const handleSend = async () => {
     setLoading(true);
     if (image) {
-      console.log(image);
       const storageRef = ref(storage, uuid());
 
       const uploadTask = uploadBytesResumable(storageRef, image);
@@ -53,7 +52,6 @@ const Input = () => {
         () => {
           setLoading(false);
           getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
-            console.log(downloadURL);
             await updateDoc(doc(db, "chats", data.chatID), {
               messages: arrayUnion({
                 id: uuid(),
@@ -69,10 +67,7 @@ const Input = () => {
           setLoading(false);
         }
       );
-      console.log(text);
     } else {
-      console.log(text);
-      console.log(data.chatID);
       try {
         await updateDoc(doc(db, "chats", data.chatID), {
           messages: arrayUnion({

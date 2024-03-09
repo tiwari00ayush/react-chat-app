@@ -11,7 +11,6 @@ const Message = ({ message }) => {
     ref.current?.scrollIntoView({ behaviour: "smooth" });
   }, [message]);
   useEffect(() => {
-    console.log(message.date.toString());
     if (message.senderID === currentUser.uid) {
       setIsOwner(true);
     } else if (message.senderID === data.user.uid) {

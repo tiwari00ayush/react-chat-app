@@ -23,12 +23,17 @@ const Register = () => {
   };
   const submitData = async (e) => {
     e.preventDefault();
-    console.log(formData);
+
     setLoading(true);
     const email = formData["email"];
     const password = formData["password"];
     const avatar = formData["avatar"];
-    console.log(URL.createObjectURL(avatar));
+    if (avatar === undefined) {
+      setError({ message: "Avatar not found" });
+      setLoading(false);
+      return;
+    }
+
     const displayName = formData["displayName"].toLowerCase();
     const q = query(
       collection(db, "users"),
@@ -50,7 +55,6 @@ const Register = () => {
     }
     try {
       const res = await createUserWithEmailAndPassword(auth, email, password);
-      console.log(res);
       const storageRef = ref(storage, displayName);
 
       const uploadTask = uploadBytesResumable(storageRef, avatar);
@@ -62,7 +66,6 @@ const Register = () => {
           // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
           const progress =
             (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log("Upload is " + progress + "% done");
           setUploadBar(progress);
           switch (snapshot.state) {
             case "paused":
@@ -82,7 +85,6 @@ const Register = () => {
           // For instance, get the download URL: https://firebasestorage.googleapis.com/...
           setLoading(false);
           getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
-            console.log("File available at", downloadURL);
             await updateProfile(res.user, {
               displayName,
               photoURL: downloadURL,
@@ -102,7 +104,6 @@ const Register = () => {
     } catch (error) {
       setLoading(false);
       setError(error);
-      console.log(error);
     }
   };
   return (
@@ -121,7 +122,6 @@ const Register = () => {
             id="avatar"
             className="text-center hidden"
             onChange={handleChange}
-            required
           />
           <label
             htmlFor="avatar"
